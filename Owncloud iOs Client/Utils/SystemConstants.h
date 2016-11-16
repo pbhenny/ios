@@ -21,3 +21,4 @@
 #define IS_IPHONE (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
 #define IS_PORTRAIT (([[UIApplication sharedApplication] statusBarOrientation] == UIInterfaceOrientationPortrait) || [[UIApplication sharedApplication] statusBarOrientation] == UIInterfaceOrientationPortraitUpsideDown)
 #define APP_DELEGATE ((AppDelegate *)[[UIApplication sharedApplication] delegate])
+#define IS_AppAlreadyLaunchedOnce [[NSUserDefaults standardUserDefaults] boolForKey:@"isAppAlreadyLaunchedOnce"]
