@@ -76,6 +76,12 @@ NSString *loginViewControllerRotate = @"loginViewControllerRotate";
         
         showPasswordCharacterButton = [UIButton buttonWithType:UIButtonTypeCustom];
         [showPasswordCharacterButton setHidden:YES];
+        
+        //We init the ManageNetworkErrors
+        if (!self.manageNetworkErrors) {
+            self.manageNetworkErrors = [ManageNetworkErrors new];
+            self.manageNetworkErrors.delegate = self;
+        }
     }
     return self;
 }
@@ -1999,7 +2005,7 @@ NSString *loginViewControllerRotate = @"loginViewControllerRotate";
             if (response.statusCode == kOCErrorServerUnauthorized) {
                 //Get header related with autentication type
                 NSString *autenticationType = [[response allHeaderFields] valueForKey:authenticationHeader];
-
+                
                 if ((autenticationType) && ([autenticationType.lowercaseString hasPrefix:outhAuthentication])) {
                     //Autentication type oauth
                     if (k_is_oauth_active) {
@@ -2015,6 +2021,9 @@ NSString *loginViewControllerRotate = @"loginViewControllerRotate";
                     //some Redirected Server our library lost the Wwww-Authenticate header
                     isInvalid = NO;
                 }
+            }else if (response != nil) {
+                [self.manageNetworkErrors returnSuitableWebDavErrorMessage:response.statusCode];
+                
             }
             
         } else {
@@ -2133,42 +2142,23 @@ NSString *loginViewControllerRotate = @"loginViewControllerRotate";
         DLog(@"error: %@", error);
         DLog(@"Operation error: %ld", (long)response.statusCode);
         
-        switch (response.statusCode) {
-            case kOCErrorServerUnauthorized:
-                //Unauthorized (bad username or password)
-                [self errorLogin];
-                break;
-            case kOCErrorServerForbidden:
-                //403 Forbidden
-                [self manageFailOfServerConnection];
-                break;
-            case kOCErrorServerPathNotFound:
-                //404 Not Found. When for example we try to access a path that now not exist
-                [self manageFailOfServerConnection];;
-                break;
-            case kOCErrorServerTimeout:
-                //408 timeout
-                [self manageFailOfServerConnection];
-                break;
-            default:
-                [self manageFailOfServerConnection];
-                break;
-        }
+        [self.manageNetworkErrors returnSuitableWebDavErrorMessage:response.statusCode];
         
     }];
     
 }
 
-- (void) manageFailOfServerConnection{
+
+- (void)showError:(NSString *) message {
+    
     dispatch_async(dispatch_get_main_queue(), ^{
         [self hideTryingToLogin];
         _alert = nil;
-        _alert = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"not_possible_connect_to_server", nil)
+        _alert = [[UIAlertView alloc] initWithTitle:message
                                             message:@"" delegate:nil cancelButtonTitle:NSLocalizedString(@"ok", nil) otherButtonTitles:nil, nil];
         [_alert show];
     });
 }
-
 
 
 ///-----------------------------------
@@ -2505,17 +2495,18 @@ NSString *loginViewControllerRotate = @"loginViewControllerRotate";
         
         [self goTryToDoLogin];
         
-    }else{
+    }else if ([samlUserName isEqual: @""]){
     
         //Show message in main thread
         dispatch_async(dispatch_get_main_queue(), ^{
             UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"saml_server_does_not_give_user_id", nil) message:@"" delegate:nil cancelButtonTitle:NSLocalizedString(@"ok", nil) otherButtonTitles:nil, nil];
             [alertView show];
         });
-       
+    }else {
+        //It's nil
+        //nothing to do
+        DLog(@"saml user name is nil");
     }
-    
-   
 
 }
 
