@@ -126,6 +126,7 @@ NSString * NotReachableNetworkForDownloadsNotification = @"NotReachableNetworkFo
     _isPasscodeVisible = NO;
     _isNewUser = NO;
     _isExpirationTimeInUpload = NO;
+    _isOpenAfterUpgrade = false;
     
     [UtilsFileSystem  initBundleVersionDefaults];
     
@@ -147,6 +148,7 @@ NSString * NotReachableNetworkForDownloadsNotification = @"NotReachableNetworkFo
         //set up parameters to force override url for all existing accounts
         [ManageUsersDB overrideAllAccountsWithNewURL:k_default_url_server];
         [ManageUsersDB updateExpiredInAllAccountsTo:YES];
+        self.isOpenAfterUpgrade = true;
     }
     
     [self showSplashScreenFake];
@@ -394,7 +396,6 @@ NSString * NotReachableNetworkForDownloadsNotification = @"NotReachableNetworkFo
         dispatch_async(dispatch_get_main_queue(), ^{
             [self doThingsThatShouldDoOnStart];
             [self launchUploadsOfflineFromDocumentProvider];
-            [self updateUploadsPathAfterChangeServerUrl];
             [self generateAppInterfaceFromLoginScreen:NO];
         });
     }
@@ -1207,6 +1208,8 @@ NSString * NotReachableNetworkForDownloadsNotification = @"NotReachableNetworkFo
         [self getCallBacksOfUploads];
         
         
+
+        
         NSUserDefaults * standardUserDefaults = [NSUserDefaults standardUserDefaults];
         
         if ([standardUserDefaults boolForKey:k_app_killed_by_user]) {
@@ -1215,6 +1218,7 @@ NSString * NotReachableNetworkForDownloadsNotification = @"NotReachableNetworkFo
             [self recoverTheFinishedUploads];
         }
         
+        [self updateUploadsPathAfterChangeServerUrl];
         
         //All the waitingForUpload should be relaunched so we change the state to errorUploading-notAnError
         [self performSelector:@selector(resetWaitingForUploadToErrorUploading) withObject:nil afterDelay:5.0];
@@ -2600,7 +2604,8 @@ NSString * NotReachableNetworkForDownloadsNotification = @"NotReachableNetworkFo
 
 - (void) updateUploadsPathAfterChangeServerUrl {
     
-    if ([ManageUsersDB isUsers] && k_force_update_of_server_url && [UtilsFileSystem isOpenAfterUpgrade]){
+    if ([ManageUsersDB isUsers] && k_force_update_of_server_url && _isOpenAfterUpgrade == true){
+        self.isOpenAfterUpgrade = false;
         for (ManageUploadRequest *uploadFile in _uploadArray) {
             [uploadFile refreshPathOfUploadAfterServerChangeUrl];
         }
